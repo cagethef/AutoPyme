@@ -338,5 +338,6 @@ def process_multiple_days(initial_date_str: str, final_date_str: str):
             parameters.start_date = current_date.strftime("%d-%m-%Y")
             receive_sige_keys("varios_dias")
         current_date += timedelta(days=1) # Aumenta um dia
-    receive_sige_keys("fechar")
-    return
+    if receive_sige_keys("fechar"):
+        return True
+    return False
