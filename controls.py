@@ -139,7 +139,7 @@ def login_time_db_sige():
     waiting = True
     while waiting:
         try:
-            operador = pg.locateOnScreen(r'assets\database.png',confidence=0.8)
+            operador = pg.locateOnScreen('files\\assets\\database.png',confidence=0.8)
             print(operador)
             pg.move(operador)
             pg.click(operador)
