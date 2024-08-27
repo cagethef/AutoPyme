@@ -47,7 +47,7 @@ def open_sige(user: str,password: str) -> bool:
                 pg.hotkey('alt','o')
                 win_wait_active("SIGEWin - Sistema Integrado de Gestão Empresarial")
                 time.sleep(500/1000)
-                estoque = pg.locateOnScreen(r'assets\estoque.png',confidence=0.8,)
+                estoque = pg.locateOnScreen('assets\\estoque.png',confidence=0.8,)
                 pg.move(estoque)
                 pg.click(estoque)
                 pg.move(500,500)
@@ -96,7 +96,7 @@ def verify_my_time(user: str):
     id = get_id(user)
     full_name = extract_full_name(id)
     time.sleep(500/1000)
-    operador = pg.locateOnScreen(r'assets\operador.png',confidence=0.3,region=(500,500,1800,900))
+    operador = pg.locateOnScreen('assets\\operador.png',confidence=0.3,region=(500,500,1800,900))
     pg.move(operador)
     pg.click(operador)
     time.sleep(500/1000)
@@ -109,7 +109,7 @@ def open_workman(asstec_number: str):
     menu = True
     while menu:
         try:
-            sige = pg.locateOnScreen(r'utils\menu_sige.png',confidence=0.8,)
+            sige = pg.locateOnScreen('assets\\menu_sige.png',confidence=0.8,)
             pg.move(sige)
             pg.click(sige)
             break
