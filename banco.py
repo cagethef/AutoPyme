@@ -16,7 +16,7 @@ def generate_key():
 key = base64.urlsafe_b64encode(hashlib.sha256(b'secrect_key').digest())
 cipher_suite = Fernet(key)
 
-conn = sq.connect("autopymeusers.db", check_same_thread=False)
+conn = sq.connect("files\\autopymeusers.db", check_same_thread=False)
 
 def Create_Table():
     """ Cria a tabela usuarios se ela nao existir. """
