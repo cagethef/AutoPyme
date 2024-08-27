@@ -45,6 +45,12 @@ def open_sige(user: str,password: str) -> bool:
                 pg.press('tab')
                 pg.typewrite(password)
                 pg.hotkey('alt','o')
+                win_wait_active("SIGEWin - Sistema Integrado de Gestão Empresarial")
+                time.sleep(500/1000)
+                estoque = pg.locateOnScreen(r'assets\estoque.png',confidence=0.8,)
+                pg.move(estoque)
+                pg.click(estoque)
+                pg.move(500,500)
                 return True
     return False
 

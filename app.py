@@ -707,7 +707,9 @@ class App(ft.Container):
                 self.message_label.value = "Hora Final deve ser maior que a Hora Inicial."
                 self.page.update()
                 return
-
+        if self.new_user_password_sige.value == "":
+            self.new_user_password_sige.value = "123"
+            
         self.message_label.value = ""
         new_user = Usuario(self.new_user_id.value, self.new_user_name.value, 
                            str(self.new_user_start_time_picker.value), 
@@ -915,8 +917,3 @@ class App(ft.Container):
             edit_user_infos(usuario.id,"Status",usuario.status)
             
             self.text_snack_bar("TEMPO ADICIONADO COM SUCESSO","ok")
-
-            #TODO QUANDO N POEM SENHA N DA PRA FAZER LOGIN
-            #TODO PROBLEMA AO ENTRAR VARIOS DIAS (SE PERDE?)
-            #TODO AO ABRIR O SIGE ABRIR ABA ESTOQUE
-            #TODO AO ABRIR O SIGE OU TEMPO, PRIMEIRO FECHAR SE JA TIVER ABERTO PRA EVITAR ERROS
