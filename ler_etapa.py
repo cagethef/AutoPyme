@@ -1,6 +1,6 @@
 import ezodf as doc
 
-path = 'utils/EtapasDesenv_AutoPyme.ods'
+path = 'files/utils/EtapasDesenv_AutoPyme.ods'
 archive = doc.opendoc(path)
 sheet = archive.sheets[0]
 
