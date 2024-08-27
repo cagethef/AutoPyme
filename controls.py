@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 from pyWinActivate import win_activate, win_wait_active, check_win_exist
 
 # MEUS ARQUIVOS #
-import config
+import parameters
 from user_model import usuario
-from banco import get_id, extract_full_name, extract_name, login_sige, get_parameters
+from banco import get_id, extract_full_name, extract_first_name, parameters_db_login_sige, get_parameters
 
 sige_path = r"\\servidor\sigewin\Arquivos de Programas\SIGEWin\sige.exe"
 asstec_path = r"\\servidor\sigewin\Arquivos de Programas\SIGEWin\TemposAsstec.exe"
@@ -17,7 +17,10 @@ asstec_path = r"\\servidor\sigewin\Arquivos de Programas\SIGEWin\TemposAsstec.ex
 cwd_sige = os.path.dirname(sige_path)  # Pra trabalhar na pasta do sige, sem isso da erro devido ao db
 cwd_asstec = os.path.dirname(asstec_path)
 
-def open_sige(user,password):
+def open_sige(user: str,password: str) -> bool:
+    """ Verifica se o sige esta aberto e abre caso necessário.
+        Se tiver usuario logado no app ele coloca o usuario e senha, se não, ele deixa em branco.
+    """
     window_exist = check_win_exist("SIGEWin - Sistema Integrado de Gestão Empresarial")
     if window_exist:
         return True # SE JA TIVER ABERTO APENAS VOLTA
@@ -46,15 +49,16 @@ def open_sige(user,password):
     return False
 
 def open_time():
+    """ Abre a entrada de tempos se não tiver aberta. """
     window_exist = check_win_exist("SIGEWin - Entrada de Tempos")
     if window_exist:
-        config.flag_first = False
+        parameters.is_already_open = False
         win_activate(window_title="SIGEWin - Entrada de Tempos",partial_match=True) 
         return
     
     subprocess.Popen([asstec_path], cwd=cwd_asstec)  # Abrir o executável
-    config.flag_first = True
-    login_time()    
+    parameters.is_already_open = True
+    login_time_db_sige()    
 
 def close_time():
     pg.press('alt')
@@ -62,11 +66,11 @@ def close_time():
     pg.press('s')
     return
 
-def get_time(user):
-    
-    if config.flag_first:
+def verify_my_time(user: str):
+    """ Verifica o tempo do usuario. """
+    if parameters.is_already_open:
         tab_number = 1
-        config.flag_first = False
+        parameters.is_already_open = False
     else:
         tab_number = 4
         
@@ -94,7 +98,8 @@ def get_time(user):
     pg.press('enter')
     pg.hotkey('alt','a')
     
-def look_workman(asstec_number):
+def open_workman(asstec_number: str):
+    """ Abre a aba de mão de obra do sige. """
     menu = True
     while menu:
         try:
@@ -123,8 +128,8 @@ def look_workman(asstec_number):
     pg.press('right',presses=4)
     return
 
-def login_time():
-    # Esperar aparecer a tela de login
+def login_time_db_sige():
+    """ Faz login no database da entrada de tempos."""
     waiting = True
     while waiting:
         try:
@@ -141,12 +146,12 @@ def login_time():
     pg.write(login)
     pg.press('enter')
 
-# FUNCAO Q ENTRA NO TEMPO COM OS DADOS COLETADOS
 def send_time_info(key: str, my_time: str, date: str):
+    """ Entra no tempo com os dados coletados. """
 
-    if config.flag_first:
+    if parameters.is_already_open:
         tab_number = 1
-        config.flag_first = False
+        parameters.is_already_open = False
     else:
         tab_number = 4
         
@@ -160,9 +165,9 @@ def send_time_info(key: str, my_time: str, date: str):
     pg.write(usuario.id)
     pg.hotkey('ctrl','h')
     pg.press('tab', presses=tab_number)
-    pg.write(config.sige_default_user)
+    pg.write(parameters.sige_default_user)
     pg.press('tab')
-    pg.write(config.sige_default_password)
+    pg.write(parameters.sige_default_password)
     pg.press('enter')
     pg.write(date)
     pg.press('tab')
@@ -170,66 +175,86 @@ def send_time_info(key: str, my_time: str, date: str):
     pg.press(key)
     pg.hotkey('alt','o')
     
-# FUNCAO QUE ORGANIZA AS INFORMAÇÕES COLETADAS NA ENTRADA DE TEMPO
-def receive_sige_keys(status: str):
-    
+def receive_sige_keys(status: str) -> bool:
+    """ Verifica o status para definir os horarios e se precisa entrar/sair. """
     if status == "entrou":
-        send_time_info("F2",config.time,config.init_date)
+        send_time_info("F2",parameters.start_time,parameters.start_date)
+        parameters.stop_join_time = True
         
     elif status == "saiu":
-        send_time_info("F3",config.time,config.init_date)
+        send_time_info("F3",parameters.start_time,parameters.start_date)
+        parameters.stop_join_time = True
         
     elif status == "manha": # MANHA COMPLETA 7:00/11:50
-        send_time_info("F2",config.time,config.init_date) #7
+        send_time_info("F2",parameters.start_time,parameters.start_date) #7
         pg.press('enter')
         my_time = edit_time("11:50")
-        send_time_info("F3",my_time,config.init_date)
+        send_time_info("F3",my_time,parameters.start_date)
+        parameters.stop_join_time = True
         
     elif status == "tarde": # TARDE COMPLETA 12:50/16:48
         my_time = edit_time("12:50")
-        send_time_info("F2",my_time,config.init_date)
+        send_time_info("F2",my_time,parameters.start_date)
         pg.press('enter')
-        send_time_info("F3",config.f_time,config.init_date)
+        send_time_info("F3",parameters.f_time,parameters.start_date)
+        parameters.stop_join_time = True
         
-    elif status == "dia_completo" or status == "varios_dias": # 07:00/11:50/12:50/16:48
-        send_time_info("F2",config.time,config.init_date)
+    elif status == "dia_completo": # 07:00/11:50/12:50/16:48
+        send_time_info("F2",parameters.start_time,parameters.start_date)
         pg.press('enter')
         my_time = edit_time("11:50")
-        send_time_info("F3",my_time,config.init_date)
+        send_time_info("F3",my_time,parameters.start_date)
         pg.press('enter')
         my_time = edit_time("12:50")
-        send_time_info("F2",my_time,config.init_date)
+        send_time_info("F2",my_time,parameters.start_date)
         pg.press('enter')
-        send_time_info("F3",config.f_time,config.init_date)
-
+        send_time_info("F3",parameters.f_time,parameters.start_date)
+        parameters.stop_join_time = True
+        
+    elif status == "varios_dias":
+        send_time_info("F2",parameters.start_time,parameters.start_date)
+        pg.press('enter')
+        my_time = edit_time("11:50")
+        send_time_info("F3",my_time,parameters.start_date)
+        pg.press('enter')
+        my_time = edit_time("12:50")
+        send_time_info("F2",my_time,parameters.start_date)
+        pg.press('enter')
+        send_time_info("F3",parameters.f_time,parameters.start_date)
+    elif status == "fechar":
+        parameters.stop_join_time = True
+        close_time()
+        parameters.stop_join_time = False
+        return True
     window_exist = check_win_exist("Information") # Verifica se deu certo
     if window_exist:
         pg.press('enter')
-        close_time()
+        if parameters.stop_join_time:
+            close_time()
+        parameters.stop_join_time = False
         return True
     else:
         return False
  
 ################# OUTRAS FUNÇÕES DE CONTROLE #################
 
-def get_user(username):
-    config.logged_in_user = username
-    return username
-
 def get_login_info():
-    usuario.name = extract_name(usuario.id) # Pega o ID e procura o primeiro nome
-    get_user(usuario.name)
-    config.sige_user, config.sige_password = login_sige(usuario.id)
+    """ Pega os parametros do usuario. """
+    usuario.name = extract_first_name(usuario.id) # Pega o ID e procura o primeiro nome
+    parameters.user_first_name = usuario.name
+    parameters.sige_username, parameters.sige_password = parameters_db_login_sige(usuario.id)
     usuario.asstec, usuario.etapa, usuario.status, usuario.I_time, usuario.F_time = get_parameters(usuario.id)
 
 def user_parameters():
+    """ Com base no id retorna os parametros do usuario. """
     usuario.id = get_id(usuario.name) # Pega o ID e procura o primeiro nome
     usuario.asstec, usuario.etapa, usuario.status, usuario.I_time, usuario.F_time = get_parameters(usuario.id)
 
-def order_infos(status: str): # Organizar o radiogroup pra mandar a informação certa
+def order_infos(status: str) -> str:
+    """ Organizar o radiogroup pra mandar a informação certa. """
     # sE ENTROU OU SAIU MANDA HORA DA INTERFACE E VAZIO
     if status == "entrou" or status == "saiu":
-        return config.time, None
+        return parameters.start_time, None
     # SE MANHA MANDA HORARIO DO USUARIO E 11:50
     elif status == "manha":
         return usuario.I_time, "11:50" # retorna 07:00 e 11:50
@@ -238,16 +263,17 @@ def order_infos(status: str): # Organizar o radiogroup pra mandar a informação
         return "12:50", usuario.F_time
     # MANDA EXPEDIENTE INTEIRO DO USUARIO
     elif status == "dia_completo":
-        if config.extra_time == True: # SE FOR HORA EXTRA
+        if parameters.extra_time == True: # SE FOR HORA EXTRA
             if usuario.F_time <= get_current_time(): # HORA DO USER MENOR Q HORA ATUAL
-                config.f_time = get_current_time() # F_TIME = HORA ATUAL
+                parameters.f_time = get_current_time() # F_TIME = HORA ATUAL
         else:
-            config.f_time = usuario.F_time
-        return usuario.I_time, config.f_time
+            parameters.f_time = usuario.F_time
+        return usuario.I_time, parameters.f_time
     elif status == "varios_dias":
         return usuario.I_time, usuario.F_time
 
-def edit_time(my_time):
+def edit_time(my_time) -> datetime:
+    """ Formata o tempo pra não ter ":" e adiciona os segundos. """
     if my_time == None: 
         return
     
@@ -269,7 +295,8 @@ def get_current_date():
     now = datetime.now()
     return now.strftime("%d-%m-%Y")
 
-def format_time(my_time): #TODO MELHORAR ESSA LOGICA, MUITAS POSSIVEIS FALHAS E ERRO
+def format_time(my_time):
+    """ Formata o tempo. """
     cleaned = ''.join(char for char in my_time if char.isdigit() or char == ':')
     # Garantir que o texto esteja no formato HH:MM
     if len(cleaned) > 2 and cleaned[2] != ':':
@@ -292,8 +319,9 @@ def format_time(my_time): #TODO MELHORAR ESSA LOGICA, MUITAS POSSIVEIS FALHAS E 
     formatted_time = f'{hour:02}:{minute:02}'
     return formatted_time
 
-def process_multiple_days(initial_date_str, final_date_str):
-    # Transforma a string recebida em datas
+def process_multiple_days(initial_date_str: str, final_date_str: str):
+    """ Transforma a string recebida em datas. 
+        Entra no tempo diversos dias. """
     initial_date = datetime.strptime(initial_date_str, '%d-%m-%Y') 
     final_date = datetime.strptime(final_date_str, '%d-%m-%Y')
     
@@ -301,32 +329,8 @@ def process_multiple_days(initial_date_str, final_date_str):
 
     while current_date <= final_date:
         if current_date.weekday() not in [5,6]: #Se for dia util ele entra
-            config.init_date = current_date.strftime("%d-%m-%Y")
+            parameters.start_date = current_date.strftime("%d-%m-%Y")
             receive_sige_keys("varios_dias")
         current_date += timedelta(days=1) # Aumenta um dia
+    receive_sige_keys("fechar")
     return
-
-
-
-def verify_request_to_join():
-    return
-
-def main():
-    
-    if open_sige(): # Esperar o SIGEWin abrir
-        print("SIGEWin está aberto.")
-        user = get_user()
-        if user:
-            print(user)
-            pg.write(user)
-            pg.press('tab')   
-        else:
-            print("Nenhum usuario logado")
-        # pg.press('enter')
-    else:
-        print("O SIGEWin não conseguiu abrir dentro do tempo limite.")
-
-
-        
-if __name__ == "__main__":
-    main()

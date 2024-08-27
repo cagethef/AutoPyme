@@ -7,8 +7,10 @@ import hashlib
 from user_model import Usuario
 #               #
 
-# Gerar uma chave para o Fernet
+# 
+
 def generate_key():
+    """ Gerar uma chave para o Fernet. """
     return Fernet.generate_key()
 
 key = base64.urlsafe_b64encode(hashlib.sha256(b'secrect_key').digest())
@@ -16,7 +18,8 @@ cipher_suite = Fernet(key)
 
 conn = sq.connect("autopymeusers.db", check_same_thread=False)
 
-def Create_Table(): # Cria a tabela usuarios se ela nao existir
+def Create_Table():
+    """ Cria a tabela usuarios se ela nao existir. """
     cursor = conn.cursor()
     conn.execute("""
     create table if not exists usuarios (
@@ -33,24 +36,28 @@ def Create_Table(): # Cria a tabela usuarios se ela nao existir
     """)
     conn.commit()
 
-def Edit_Info(user: str, value: str, new_value: str):
+def edit_user_infos(user: str, value: str, new_value: str) -> bool:
+    """ Edita a informação do usuario baseado no ID. """
+    
     values = ['Name','I_time','F_time','User','Password',"Asstec","Etapa","Status"]
     if value in values:
         cursor = conn.cursor()
         cursor.execute(f"UPDATE usuarios SET {value} = ? WHERE ID = ?",(new_value, user)) # Update usuario no campo de valor tal quando id for o correto
         conn.commit()
-        print(f"Valor {value} mudou para {new_value}")
+        return True
     else:
-        print("Campo não existe.")
+        return False
 
-def Remove_Info(user: str):
+def remove_user_info(user: str):
+    """ Remove um usuario baseado no ID. """
+    
     cursor = conn.cursor()
-    teste = cursor.execute("DELETE FROM usuarios WHERE ID = ?",([user,]))
-    print(f'ROWCOUNT {teste.rowcount}')
+    deleted_user = cursor.execute("DELETE FROM usuarios WHERE ID = ?",([user,]))
     conn.commit()
-    print(f"ID {user} removido.")
 
 def validate_user_credentials(user_id: str, password: str) -> bool:
+    """ Verifica se a senha digitada esta identifica a senha do banco de dados. """
+    
     cursor = conn.cursor()
     cursor.execute("SELECT Password FROM usuarios WHERE ID = ?",(user_id,))
     my_pass = cursor.fetchone()
@@ -60,7 +67,9 @@ def validate_user_credentials(user_id: str, password: str) -> bool:
         return True
     return False
 
-def verify_password(password: str):
+def get_id_from_password(password: str):
+    """ Coleta o ID com base na senha. """
+    
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT ID FROM usuarios WHERE Password = ?",(password,))
@@ -70,7 +79,9 @@ def verify_password(password: str):
     except:
         return None
     
-def get_db_time(user_id: str):
+def get_time_from_id(user_id: str) -> str:
+    " Coleta o tempo do usuario com base no ID. "
+    
     cursor = conn.cursor() 
     cursor.execute("SELECT I_time FROM usuarios WHERE ID = ?",(user_id,)) # BUSCA TEMPO INICIAL DB
     I_time = cursor.fetchone()[0]
@@ -80,7 +91,9 @@ def get_db_time(user_id: str):
 
     return I_time, F_time
 
-def get_parameters(user_id: str):
+def get_parameters(user_id: str) -> str:
+    " Coleta os parametros com base no ID. "
+    
     cursor = conn.cursor() 
     cursor.execute("SELECT Asstec FROM usuarios WHERE ID = ?",(user_id,)) # BUSCA ASSTES DB
     asstec = cursor.fetchone()[0]
@@ -99,6 +112,8 @@ def get_parameters(user_id: str):
     return asstec, etapa, status, I_time, F_time
 
 def get_id(name: str):
+    """ Coleta o ID baseado no nome. """
+    
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT ID FROM usuarios WHERE Name LIKE ?",(name+"%",))
@@ -108,13 +123,16 @@ def get_id(name: str):
     except:
         return None
 
-def extract_full_name(user_id: str):
+def extract_full_name(user_id: str) -> str:
+    """ Coleta o nome completo com base no ID. """
+    
     cursor = conn.cursor()
     cursor.execute("SELECT Name FROM usuarios WHERE ID = ?",(user_id,))
     name = cursor.fetchone()[0]
     return name
     
-def extract_name(user_id: str):
+def extract_first_name(user_id: str):
+    """ Coleta o nome com base no id e splita apenas o primeiro nome. """
     cursor = conn.cursor()
     cursor.execute("SELECT Name FROM usuarios WHERE ID = ?",(user_id,))
     name = cursor.fetchone()
@@ -122,7 +140,9 @@ def extract_name(user_id: str):
     first_name_str = str(first_name).replace('(', '').replace("'","")
     return str(first_name_str)
 
-def login_sige(user_id: str):
+def parameters_db_login_sige(user_id: str) -> str:
+    """ Coleta o usuario e senha do sige com base no id. """
+    
     cursor = conn.cursor()
     cursor.execute("SELECT Password FROM usuarios WHERE ID = ?",(user_id,))
     my_pass = cursor.fetchone()
@@ -134,7 +154,10 @@ def login_sige(user_id: str):
     my_user = cursor.fetchone()
     return my_user[0], decrypted_password
 
-def login_user_db(user_id: str, password: str): # VERIFICA SE A SENHA DIGITADA ESTA CORRETA E RETORNA TRUE OU FALSE E A SENHA CRIPTOGRAFADA PRA ARMAZENAR TXT
+def login_user_db(user_id: str, password: str): 
+    """ VERIFICA SE A SENHA DIGITADA RETORNA BOOL E 
+    A SENHA CRIPTOGRAFADA PRA ARMAZENAR TXT
+    """ 
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT Password FROM usuarios WHERE ID = ?",(user_id,))
@@ -147,12 +170,14 @@ def login_user_db(user_id: str, password: str): # VERIFICA SE A SENHA DIGITADA E
         return False
 
 def add_user_to_db(new_user: Usuario):
+    """ Adiciona um novo usuario ao banco de dados. """
     encrypted_password = cipher_suite.encrypt(new_user.password.encode()).decode()
     cursor = conn.cursor()
     cursor.execute("Insert into usuarios (ID, Name, I_time, F_time, User, Password) values (?,?,?,?,?,?)",(new_user.id, new_user.name, new_user.I_time, new_user.F_time, new_user.user, encrypted_password))
     conn.commit()
 
-def verify_ID(id: str) -> bool:
+def verify_exist_id(id: str) -> bool:
+    """ Verifica se o id existe. """
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM usuarios WHERE ID = ?", (id,))
     count = cursor.fetchone()[0]
@@ -167,7 +192,7 @@ def load_all_users():
     cursor.execute("SELECT Name FROM usuarios")
     return cursor.fetchall()
 
-def extract_first_name():
+def extract_first_name_all_users():
     cursor = conn.cursor()
     cursor.execute("SELECT Name FROM usuarios")
     rows = cursor.fetchall()
@@ -204,11 +229,11 @@ def main():
                 value = input("Digite o campo que quer editar (Name, I_time, F_time, User, Password): ")
                 new_value = input("Digite o novo valor: ")
                 user_edit = Usuario(ID,"","","","","")
-                Edit_Info(user_edit, value, new_value)
+                edit_user_infos(user_edit, value, new_value)
 
             case "3":
                 ID = input("Digite o ID do usuario a ser removido: ")
-                Remove_Info(ID)
+                remove_user_info(ID)
 
             case "4":
                 print("Saindo...")

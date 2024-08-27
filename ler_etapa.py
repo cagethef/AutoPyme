@@ -4,7 +4,8 @@ path = 'utils/EtapasDesenv_AutoPyme.ods'
 archive = doc.opendoc(path)
 sheet = archive.sheets[0]
 
-def load_etapas_from_ods():     # Carregar ETAPAS
+def load_etapas_from_ods() -> list:
+    """ Carrega todas as etapas da planilha. """
     etapas = []
     for row in sheet.rows():
         etapa_value = row[0].value
@@ -15,6 +16,7 @@ def load_etapas_from_ods():     # Carregar ETAPAS
     return etapas
 
 def search_workstation_from_ods(my_work):
+    """ pesquisa a estacao de trabalho com base na etapa selecionada. """
     workstation = None
     for row in sheet.rows():
         etapa_value = row[0].value
@@ -24,7 +26,8 @@ def search_workstation_from_ods(my_work):
             break
     return workstation
 
-def load_workstation_from_ods():     # Carregar ESTACAO TRABALHO
+def load_workstation_from_ods() -> str:
+    """ Carrega a estação de trabalho. """
     workstations = []
     for row in sheet.rows():
         workstation_value = row[1].value
@@ -34,7 +37,8 @@ def load_workstation_from_ods():     # Carregar ESTACAO TRABALHO
             workstations.append(workstation_value)
     return workstations
 
-def load_desc_from_ods(): # CARREGAR DESCRICAO ETAPAS
+def load_desc_from_ods() -> str:
+    """ Carrega a descrição de cada etapa. """
     valores = []
     for row in sheet.rows():
         descricao_value = row[2].value
@@ -44,7 +48,8 @@ def load_desc_from_ods(): # CARREGAR DESCRICAO ETAPAS
             valores.append(descricao_value)
     return valores
 
-def load_full_from_ods():     # Carregar dados da planilha  
+def load_full_from_ods():
+    """ Carrega os dados da planilha. """
     work = []
     for row in sheet.rows():
         etapa_value = row[0].value
@@ -56,6 +61,4 @@ def load_full_from_ods():     # Carregar dados da planilha
             descricao_str = str(descricao_value).replace('(', '').replace(')', '').replace("'", '')
             work.append(f"{etapa_str},{descricao_str}")
     return work
-
-#print(load_full_from_ods())
 

@@ -1,0 +1,12 @@
+user_first_name = None
+sige_username = None 
+sige_password = None
+start_date = None
+final_date = None
+start_time = None
+f_time = None
+extra_time = False
+is_already_open = True
+sige_default_user = "rafael"
+sige_default_password = "r1990"
+stop_join_time = False
