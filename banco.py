@@ -97,10 +97,10 @@ def get_parameters(user_id: str) -> str:
     cursor = conn.cursor() 
     cursor.execute("SELECT Asstec FROM usuarios WHERE ID = ?",(user_id,)) # BUSCA ASSTES DB
     asstec = cursor.fetchone()[0]
-    
+
     cursor.execute("SELECT Etapa FROM usuarios WHERE ID = ?",(user_id,)) # BUSCA ETAPA DB
     etapa = cursor.fetchone()[0]
-    
+
     cursor.execute("SELECT Status FROM usuarios WHERE ID = ?",(user_id,)) # BUSCA STATUS DB
     status = cursor.fetchone()[0]
     

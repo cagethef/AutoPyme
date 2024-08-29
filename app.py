@@ -163,6 +163,7 @@ class App(ft.Container):
             prefix_icon=ft.icons.ONETWOTHREE_OUTLINED,
             on_change=self.clear_error,
             value = usuario.asstec,
+            autofocus=True,
         )
         
         self.workman=ft.IconButton(
@@ -330,7 +331,7 @@ class App(ft.Container):
             prefix_icon=ft.icons.ASSIGNMENT_IND,
             capitalization=ft.TextCapitalization.WORDS,
             value = usuario.name,
-            on_blur = self.user_changed,
+            on_change = self.user_changed,
         )
 
         self.user_dropdown=ft.Dropdown(   # LISTA DROPDOWN NOMES (SETINHA)
@@ -607,6 +608,7 @@ class App(ft.Container):
         
         selected_value = self.user_dropdown.value
         self.user.value = selected_value
+        usuario.name = self.user.value
         user_parameters()
         self.page.update()
         
@@ -845,6 +847,7 @@ class App(ft.Container):
         return False
     
     def is_error(self) -> bool: 
+        
         """ Verifica possiveis campos vazios e 
         também se ja entrou em outra asstec ou etapa. 
         """
@@ -879,6 +882,8 @@ class App(ft.Container):
             Chama as funções pra verificar se tem algo incoerente.
             Caso esteja tudo certo, entra no tempo e atualiza o banco de dados.
         """
+        usuario.name = self.user.value
+        user_parameters()
         
         if self.is_error(): return # SE TIVER ALGO INCOERENTE NOS CAMPOS N ENTRA NO TEMPO E AVISA
         
@@ -898,15 +903,17 @@ class App(ft.Container):
         
         parameters.start_time = edit_time(parameters.start_time) # TRANSFORMA EM STRING SEM :
         parameters.f_time = edit_time(parameters.f_time)
-        
-        open_time() # ABRE A ENTRADA DE TEMPOS SE NAO ESTIVER ABERTA E LOGIN
-        
+
         if usuario.status == "varios_dias":
             is_sucess = process_multiple_days(parameters.start_date,parameters.final_date)
+            if not is_sucess:
+                self.text_snack_bar("DATA INICIAL OU FINAL INCORRETA.","erro")
+                return
         
         else:
+            print("nao entrou varios dias")
             is_sucess = receive_sige_keys(usuario.status) # MANDA AS INFORMAÇOES
-        
+
         # SE O TEMPO FOR FEITO CORRETO ATUALIZA AS INFORMAÇÕES NO DATABASE
         if is_sucess:
             if usuario.status != "entrou":
@@ -917,3 +924,5 @@ class App(ft.Container):
             edit_user_infos(usuario.id,"Status",usuario.status)
             
             self.text_snack_bar("TEMPO ADICIONADO COM SUCESSO","ok")
+        else:
+            self.text_snack_bar("HOUVE UM PROBLEMA AO ENTRAR NO TEMPO","erro")

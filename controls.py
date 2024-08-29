@@ -183,6 +183,7 @@ def send_time_info(key: str, my_time: str, date: str):
     
 def receive_sige_keys(status: str) -> bool:
     """ Verifica o status para definir os horarios e se precisa entrar/sair. """
+    open_time()
     if status == "entrou":
         send_time_info("F2",parameters.start_time,parameters.start_date)
         parameters.stop_join_time = True
@@ -233,9 +234,12 @@ def receive_sige_keys(status: str) -> bool:
         parameters.stop_join_time = False
         return True
     window_exist = check_win_exist("Information") # Verifica se deu certo
+    print("Window exist")
     if window_exist:
+        print("entrar window exist")
         pg.press('enter')
         if parameters.stop_join_time:
+            print("nao pode")
             close_time()
         parameters.stop_join_time = False
         return True
@@ -252,7 +256,7 @@ def get_login_info():
     usuario.asstec, usuario.etapa, usuario.status, usuario.I_time, usuario.F_time = get_parameters(usuario.id)
 
 def user_parameters():
-    """ Com base no id retorna os parametros do usuario. """
+    """ Com base no nome retorna os parametros do usuario. """
     usuario.id = get_id(usuario.name) # Pega o ID e procura o primeiro nome
     usuario.asstec, usuario.etapa, usuario.status, usuario.I_time, usuario.F_time = get_parameters(usuario.id)
 
@@ -328,16 +332,23 @@ def format_time(my_time):
 def process_multiple_days(initial_date_str: str, final_date_str: str):
     """ Transforma a string recebida em datas. 
         Entra no tempo diversos dias. """
+    if final_date_str == None:
+        final_date_str = get_current_date()
     initial_date = datetime.strptime(initial_date_str, '%d-%m-%Y') 
     final_date = datetime.strptime(final_date_str, '%d-%m-%Y')
     
-    current_date = initial_date
-
-    while current_date <= final_date:
-        if current_date.weekday() not in [5,6]: #Se for dia util ele entra
-            parameters.start_date = current_date.strftime("%d-%m-%Y")
-            receive_sige_keys("varios_dias")
-        current_date += timedelta(days=1) # Aumenta um dia
-    if receive_sige_keys("fechar"):
-        return True
-    return False
+    if final_date <= initial_date:
+        print("entrou")
+        return False
+    else:
+        current_date = initial_date
+        
+        while current_date <= final_date:
+            print(f"dia atual {current_date}")
+            if current_date.weekday() not in [5,6]: #Se for dia util ele entra
+                parameters.start_date = current_date.strftime("%d-%m-%Y")
+                receive_sige_keys("varios_dias")
+            current_date += timedelta(days=1) # Aumenta um dia
+        if receive_sige_keys("fechar"):
+            return True
+        return False
